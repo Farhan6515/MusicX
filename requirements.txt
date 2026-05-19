@@ -1,0 +1,2 @@
+deepface==0.0.93
+opencv-python-headless==4.10.0.84

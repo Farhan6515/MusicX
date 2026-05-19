@@ -1,0 +1,410 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MusicX Player</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Ambient orbs -->
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+<div class="orb orb-3"></div>
+
+<div class="app">
+
+  <!-- HEADER -->
+  <header class="header anim">
+    <a class="logo" href="#">
+      <div class="logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+      </div>
+      Music<span class="logo-x">X</span>
+    </a>
+    <div class="header-search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7">
+        <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+      </svg>
+      <input type="search" id="searchInput" placeholder="Search songs, artists" aria-label="Search songs and artists">
+    </div>
+    <div class="header-right">
+      <button class="header-btn" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          <path d="M18 8c1.5.5 2.5 1.8 2.5 3.5" stroke-dasharray="2 2"/>
+        </svg>
+        <span>Scan Mood</span>
+      </button>
+      <button class="avatar" id="profileTrigger" onclick="openProfileModal()" aria-label="Open profile">S</button>
+    </div>
+  </header>
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <!-- MOOD SCAN CARD -->
+    <div class="mood-scan-card anim d1" id="moodScanCard">
+      <div class="mood-header">
+        <div>
+          <div class="mood-label">AI Feature</div>
+          <div class="mood-title">Scan Your Mood</div>
+          <div class="mood-sub">Let AI detect your emotion & play the perfect music</div>
+        </div>
+      </div>
+
+      <!-- Animated face scan rings -->
+      <div class="face-scan">
+        <div class="scan-rings">
+          <div class="ring ring-1"></div>
+          <div class="ring ring-2"></div>
+          <div class="ring ring-3"></div>
+          <div class="scan-face"><span>😐</span></div>
+          <div class="scan-line"></div>
+        </div>
+      </div>
+
+      <!-- Mood result (shown after scan) -->
+      <div class="mood-result" id="moodResult">
+        <div class="mood-result-dot"></div>
+        <div class="mood-result-text">Mood detected: <span class="mood-result-name" id="moodResultName">Melancholic</span> — Curating your playlist…</div>
+      </div>
+
+      <!-- Quick mood tags -->
+      <div class="mood-tags">
+        <span class="mood-tag active" onclick="pickTag(this,'Happy')">😊 Happy</span>
+        <span class="mood-tag" onclick="pickTag(this,'Sad')">😢 Sad</span>
+        <span class="mood-tag" onclick="pickTag(this,'Chill')">😌 Chill</span>
+        <span class="mood-tag" onclick="pickTag(this,'Focus')">🎯 Focus</span>
+        <span class="mood-tag" onclick="pickTag(this,'Romance')">💕 Romance</span>
+        <span class="mood-tag" onclick="pickTag(this,'Party')">🎉 Party</span>
+      </div>
+
+      <button class="scan-btn" id="scanBtn" onclick="openModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:16px;height:16px;stroke:var(--ink)">
+          <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+        </svg>
+        Scan My Mood
+      </button>
+    </div>
+
+    <!-- SUGGESTED MUSIC -->
+    <div class="anim d2">
+      <div class="section-head">
+        <div>
+          <div class="section-title">Suggested For You</div>
+          <div class="section-meta" id="sectionMeta">Based on your mood · 12 tracks</div>
+        </div>
+        <button class="see-all" id="seeAllBtn" onclick="toggleSeeAll()">See all →</button>
+      </div>
+      <div class="song-list" id="songList"></div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT PANEL: NOW PLAYING -->
+  <div class="right-panel anim d3">
+    <div class="now-playing-card" id="nowPlayingCard">
+      <div class="np-label">Now Playing</div>
+
+      <!-- Album art -->
+      <div class="album-art-wrap">
+        <div class="album-art" id="albumArt">
+          <img id="albumArtImg" class="album-art-img" src="" alt="" aria-hidden="true">
+          <div class="album-art-bg"></div>
+          <div class="album-vinyl"></div>
+          <span class="album-emoji" id="albumEmoji">💔</span>
+          <div class="art-eq-overlay">
+            <div class="aeq" style="height:5px"></div>
+            <div class="aeq" style="height:8px"></div>
+            <div class="aeq" style="height:6px"></div>
+            <div class="aeq" style="height:9px"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Song info -->
+      <div class="np-song-name" id="npSongName">Kaise Hua</div>
+      <div class="np-song-artist" id="npArtist">Vishal Mishra · Kabir Singh</div>
+
+      <!-- Quick actions -->
+      <div class="np-actions">
+        <button class="np-action-btn" onclick="showNpPlaylistPicker(event)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="17" y2="12"/><line x1="15" y1="15" x2="15" y2="21"/><line x1="12" y1="18" x2="18" y2="18"/></svg>
+          Save
+        </button>
+        <button class="np-action-btn" onclick="shareSong()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+          Share
+        </button>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-section">
+        <div class="progress-bar-wrap" onclick="seekTo(event)">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+        <div class="progress-times">
+          <span id="timeNow">1:18</span>
+          <span>3:45</span>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <button class="ctrl-btn active" title="Shuffle" onclick="this.classList.toggle('active')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg>
+        </button>
+        <button class="ctrl-btn" title="Previous" onclick="prevSong()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+        </button>
+        <button class="ctrl-play" id="playBtn" onclick="togglePlay()">
+          <svg viewBox="0 0 24 24" id="playIcon"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+        <button class="ctrl-btn" title="Next" onclick="nextSong()">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14L11.03 12 8 14.14V9.86zM16 6h2v12h-2z"/></svg>
+        </button>
+        <button class="ctrl-btn" title="Repeat" onclick="this.classList.toggle('active')">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+        </button>
+      </div>
+
+      <!-- Volume -->
+      <div class="volume-row">
+        <button class="vol-btn">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        </button>
+        <div class="vol-bar-wrap" onclick="setVolume(event)">
+          <div class="vol-fill" id="volFill"></div>
+        </div>
+        <button class="vol-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M11 5L6 9H2v6h4l5 4V5zM19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- MOOD SCAN MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal">
+    <div class="modal-grid"></div>
+    <button class="modal-close" onclick="closeModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="modal-label">AI Mood Detection</div>
+    <div class="modal-title">How are you feeling?</div>
+    <div class="modal-sub">We'll scan your vibe and curate the perfect playlist</div>
+
+    <div class="modal-scan-area" id="modalScanArea">
+      <video class="mood-camera" id="moodCamera" autoplay muted playsinline></video>
+      <canvas id="moodCanvas" width="320" height="240" hidden></canvas>
+      <div class="modal-scan-rings">
+        <div class="mring mring-1"></div>
+        <div class="mring mring-2"></div>
+        <div class="mring mring-3"></div>
+        <div class="mface" id="mface">😐</div>
+        <div class="mscan-line"></div>
+      </div>
+    </div>
+
+    <div class="modal-moods">
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'😊','Happy')">
+        <span class="modal-mood-emoji">😊</span>
+        <div class="modal-mood-name">Happy</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'😢','Sad')">
+        <span class="modal-mood-emoji">😢</span>
+        <div class="modal-mood-name">Sad</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'😌','Chill')">
+        <span class="modal-mood-emoji">😌</span>
+        <div class="modal-mood-name">Chill</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'🎯','Focus')">
+        <span class="modal-mood-emoji">🎯</span>
+        <div class="modal-mood-name">Focus</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'💕','Romance')">
+        <span class="modal-mood-emoji">💕</span>
+        <div class="modal-mood-name">Romance</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'😤','Angry')">
+        <span class="modal-mood-emoji">😤</span>
+        <div class="modal-mood-name">Angry</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'🎉','Party')">
+        <span class="modal-mood-emoji">🎉</span>
+        <div class="modal-mood-name">Party</div>
+      </button>
+      <button class="modal-mood-btn" onclick="pickModalMood(this,'🌙','Sleepy')">
+        <span class="modal-mood-emoji">🌙</span>
+        <div class="modal-mood-name">Sleepy</div>
+      </button>
+    </div>
+
+    <button class="modal-scan-btn" onclick="runScan()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+      </svg>
+      Start Mood Scan
+    </button>
+  </div>
+</div>
+
+
+<!-- PROFILE / AUTH MODAL -->
+<div class="profile-overlay" id="profileOverlay" onclick="closeProfileOutside(event)">
+  <div class="profile-panel">
+    <button class="modal-close" onclick="closeProfileModal()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+
+    <div class="profile-view" id="authView">
+      <div class="modal-label">Profile Access</div>
+      <div class="profile-title" id="authTitle">Welcome Back</div>
+      <div class="profile-sub" id="authSub">Login to open your MusicX dashboard</div>
+
+            <button class="google-auth-btn" type="button" onclick="loginWithGoogle()">
+        <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.3 9.14 5.38 12 5.38z"/></svg>
+        Continue with Google
+      </button>
+      <div class="auth-note">Login and signup are handled with Google OAuth. Your profile is stored in MongoDB.</div>
+    </div>
+
+    <div class="profile-view dashboard-view" id="dashboardView">
+      <div class="profile-hero">
+        <div class="profile-avatar-wrap" onclick="openAvatarPicker()" title="Change profile photo">
+          <div class="profile-avatar" id="profileAvatar">S</div>
+          <div class="avatar-cam-overlay">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </div>
+        </div>
+        <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarChange(this)">
+        <div>
+          <div class="modal-label">Your Dashboard</div>
+          <div class="profile-title" id="profileName">Listener</div>
+          <div class="profile-sub" id="profileEmail">listener@musicx.app</div>
+        </div>
+      </div>
+
+      <div class="profile-stats">
+        <div class="profile-stat"><span id="statSavedTracks">0</span><small>Saved</small></div>
+        <div class="profile-stat"><span id="currentMoodStat">Happy</span><small>Mood</small></div>
+        <div class="profile-stat profile-stat-btn" onclick="toggleSettings()" id="settingsStat">
+          <span>
+            <svg viewBox="0 0 24 24" fill="currentColor" style="width:17px;height:17px">
+              <path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
+            </svg>
+          </span>
+          <small>Settings</small>
+        </div>
+      </div>
+
+      <!-- SETTINGS PANEL -->
+      <div class="s-panel" id="settingsPanel">
+        <div class="s-item" onclick="toggleSub('aboutSub', this)">
+          <div class="s-item-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:15px;height:15px"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            About Us
+          </div>
+          <svg class="s-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="s-sub" id="aboutSub">
+          <p>MusicX is a mood-aware music player that uses AI emotion detection to serve the perfect playlist. Powered by the iTunes API and HuggingFace models — built for music lovers.</p>
+          <div class="s-devs">
+            <div class="s-dev">
+              <div class="s-dev-avatar">FS</div>
+              <div>
+                <div class="s-dev-name">Farhan Siddiqui</div>
+                <div class="s-dev-role">Developer · CSE</div>
+              </div>
+            </div>
+            <div class="s-dev">
+              <div class="s-dev-avatar">MQ</div>
+              <div>
+                <div class="s-dev-name">Mehwish Qamer</div>
+                <div class="s-dev-role">Developer · CSE</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="s-item" onclick="toggleSub('contactSub', this)">
+          <div class="s-item-left">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:15px;height:15px"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+            Contact Us
+          </div>
+          <svg class="s-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="s-sub" id="contactSub">
+          <p>Have feedback, bugs, or suggestions?</p>
+          <a href="mailto:farhanbadar66@gmail.com" class="s-contact-link">farhanbadar66@gmail.com</a>
+        </div>
+
+        <div class="s-item s-item-mode">
+          <div class="s-item-left">
+            <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" style="width:15px;height:15px"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+            <span id="modeLabel">Light Mode</span>
+          </div>
+          <div class="mode-toggle" id="modeToggle" onclick="toggleDarkMode()">
+            <div class="mode-thumb"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACTIVITY STATS -->
+      <div class="dash-activity" id="dashActivity">
+        <div class="da-card">
+          <span id="statPlaysCount">0</span>
+          <small>Plays</small>
+        </div>
+        <div class="da-card">
+          <span id="statPlaylistsCount">0</span>
+          <small>Playlists</small>
+        </div>
+      </div>
+
+      <div class="profile-dashboard-card">
+        <div class="profile-card-label">Now Playing</div>
+        <div class="profile-card-title" id="profileNowPlaying">Kaise Hua</div>
+        <div class="profile-card-meta" id="profileNowArtist">Vishal Mishra</div>
+      </div>
+
+      <!-- RECENTLY PLAYED -->
+      <div class="rp-section">
+        <div class="rp-section-hd">
+          <span class="rp-section-title">Recently Played</span>
+          <button class="rp-clear-btn" onclick="clearRecentlyPlayed()">Clear</button>
+        </div>
+        <div class="rp-list" id="rpContainer"></div>
+      </div>
+
+      <div class="pl-section">
+        <div class="pl-section-hd">
+          <span class="pl-section-title">My Playlists</span>
+          <button class="pl-new-btn" onclick="toggleNewPlaylistForm()">+ New</button>
+        </div>
+        <div class="pl-create-form hidden" id="plCreateForm">
+          <input class="pl-create-input" type="text" id="plNameInput" placeholder="Playlist name…" maxlength="40"
+            onkeydown="if(event.key==='Enter')createPlaylist()">
+          <button type="button" class="pl-create-submit" onclick="createPlaylist()">Create</button>
+        </div>
+        <div id="playlistsContainer" class="pl-list"></div>
+      </div>
+
+      <button class="auth-submit logout-btn" type="button" onclick="logoutProfile()">Logout</button>
+    </div>
+  </div>
+</div>
+<script src="script.js"></script>
+</body>
+</html>
+
+
+
+
