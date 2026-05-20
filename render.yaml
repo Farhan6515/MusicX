@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: musicx-backend
+    runtime: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn "app:create_app()"
+    envVars:
+      - key: MONGODB_URI
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: APP_URL
+        sync: false          # set to your Vercel frontend URL, e.g. https://musicx.vercel.app
+      - key: GOOGLE_CALLBACK_URL
+        sync: false          # set to https://<your-render-app>.onrender.com/auth/google/callback
+      - key: FLASK_ENV
+        value: production

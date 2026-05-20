@@ -11,7 +11,7 @@ from pymongo.errors import PyMongoError
 client = None
 db = None
 users = None
-db_connected = False
+db_connected = False 
 
 
 def connect_db():

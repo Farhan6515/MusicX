@@ -17,6 +17,13 @@ GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token"
 GOOGLE_USERINFO_URL = "https://www.googleapis.com/oauth2/v3/userinfo"
 
 
+def _frontend_url(path: str) -> str:
+    """Return an absolute URL on the frontend (Vercel) for redirects.
+    Falls back to a relative path so local dev still works."""
+    base = os.getenv("APP_URL", "").rstrip("/")
+    return f"{base}{path}" if base else path
+
+
 def current_user():
     user = db.find_user(session.get("user_id"))
     if not user:
@@ -43,11 +50,11 @@ def google_login():
 @auth_bp.get("/google/callback")
 def google_callback():
     if request.args.get("error"):
-        return redirect("/?auth=failed")
+        return redirect(_frontend_url("/?auth=failed"))
 
     code = request.args.get("code")
     if not code:
-        return redirect("/?auth=failed")
+        return redirect(_frontend_url("/?auth=failed"))
 
     try:
         callback_url = os.getenv("GOOGLE_CALLBACK_URL") or request.url_root.rstrip("/") + "/auth/google/callback"
@@ -89,10 +96,10 @@ def google_callback():
             }
             session["user_id"] = fallback["_id"]
             session["user_profile"] = fallback
-        return redirect("/?auth=success")
+        return redirect(_frontend_url("/?auth=success"))
     except Exception as error:
         print(f"Google auth failed: {error}")
-        return redirect("/?auth=failed")
+        return redirect(_frontend_url("/?auth=failed"))
 
 
 @auth_bp.get("/me")

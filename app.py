@@ -4,6 +4,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from backend.auth import auth_bp
 from backend import db
@@ -16,21 +17,32 @@ FRONTEND = ROOT / "frontend"
 
 load_dotenv(ROOT / ".env")
 
+# True when running on Render (Render injects the RENDER env var automatically)
+IS_PRODUCTION = os.getenv("RENDER") is not None
+
 
 def create_app():
     db.connect_db()
 
     app = Flask(__name__, static_folder=str(FRONTEND), static_url_path="")
+    # Trust one layer of reverse-proxy headers (Render / Vercel)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
     app.secret_key = os.getenv("SESSION_SECRET", "dev-only-change-me")
     app.config.update(
         SESSION_COOKIE_NAME="musicx.sid",
         SESSION_COOKIE_HTTPONLY=True,
         SESSION_COOKIE_SAMESITE="Lax",
-        SESSION_COOKIE_SECURE=False,
+        SESSION_COOKIE_SECURE=IS_PRODUCTION,   # requires HTTPS in production
         MAX_CONTENT_LENGTH=8 * 1024 * 1024,
     )
 
-    CORS(app, origins=[os.getenv("APP_URL", "http://localhost:3000")], supports_credentials=True)
+    # Allow requests from the Vercel frontend + localhost for local dev
+    allowed_origins = {"http://localhost:3001", "http://localhost:3000"}
+    app_url = os.getenv("APP_URL", "").rstrip("/")
+    if app_url:
+        allowed_origins.add(app_url)
+    CORS(app, origins=list(allowed_origins), supports_credentials=True)
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(mood_bp)
