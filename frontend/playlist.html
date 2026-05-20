@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Playlists — MusicX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: var(--ink); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100vh; }
+
+    .pl-page-shell { max-width: 680px; margin: 0 auto; padding: 0 0 80px; }
+
+    /* Top bar */
+    .pl-topbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: rgba(10,10,11,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    html.light .pl-topbar { background: rgba(240,244,255,0.95); }
+
+    .pl-back {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--ink3); border: 1px solid var(--border2);
+      color: var(--text2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s; text-decoration: none;
+    }
+    .pl-back:hover { background: var(--ink4); color: var(--text); }
+    .pl-back svg { width: 18px; height: 18px; }
+
+    .pl-topbar-title { flex: 1; font-size: 17px; font-weight: 600; color: var(--text); }
+
+    .pl-new-top {
+      height: 34px; padding: 0 16px;
+      background: rgba(59,130,246,0.12);
+      border: 1px solid rgba(59,130,246,0.28);
+      border-radius: 20px;
+      color: #60a5fa; font-family: 'Outfit', sans-serif;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      white-space: nowrap; transition: background 0.2s;
+    }
+    .pl-new-top:hover { background: rgba(59,130,246,0.22); }
+
+    /* Create form strip */
+    .pl-create-strip {
+      display: none; gap: 10px; align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      background: var(--ink2);
+    }
+    .pl-create-strip.open { display: flex; }
+    .pl-create-strip input {
+      flex: 1; height: 38px;
+      background: var(--ink3); border: 1.5px solid var(--border);
+      border-radius: 10px; padding: 0 13px;
+      color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s;
+    }
+    .pl-create-strip input:focus { border-color: rgba(59,130,246,0.45); }
+    .pl-create-strip button {
+      height: 38px; padding: 0 18px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      border: none; border-radius: 10px;
+      color: var(--ink); font-family: 'Outfit', sans-serif;
+      font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+
+    /* Grid */
+    .pl-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 16px;
+    }
+
+    /* Card */
+    .pl-card {
+      border-radius: 14px;
+      background: var(--ink3);
+      border: 1px solid var(--border2);
+      overflow: hidden; cursor: pointer;
+      transition: transform 0.18s, border-color 0.18s;
+    }
+    .pl-card:hover { transform: translateY(-3px); border-color: rgba(59,130,246,0.32); }
+    .pl-card:active { transform: translateY(0); }
+
+    /* Artwork collage */
+    .pl-card-art {
+      width: 100%; aspect-ratio: 1;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      background: var(--ink4);
+      overflow: hidden;
+    }
+    .pl-card-art.art-empty {
+      display: flex; align-items: center; justify-content: center;
+      font-size: 40px;
+    }
+    .pl-card-art.art-one {
+      grid-template-columns: 1fr; grid-template-rows: 1fr;
+    }
+    .pl-art-cell {
+      background: var(--ink4);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; overflow: hidden;
+    }
+    .pl-art-cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+    /* Card info */
+    .pl-card-info { padding: 10px 12px 12px; }
+    .pl-card-name {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      margin-bottom: 5px;
+    }
+    .pl-card-foot { display: flex; align-items: center; justify-content: space-between; }
+    .pl-card-count { font-size: 11px; color: var(--text3); }
+    .pl-card-del {
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); padding: 3px;
+      display: flex; align-items: center;
+      opacity: 0.55; transition: opacity 0.2s, color 0.2s;
+    }
+    .pl-card-del:hover { opacity: 1; color: #e06060; }
+    .pl-card-del svg { width: 14px; height: 14px; }
+
+    /* Empty state */
+    .pl-empty-state {
+      text-align: center; padding: 64px 20px; color: var(--text3);
+    }
+    .pl-empty-state svg { width: 52px; height: 52px; opacity: 0.18; margin-bottom: 14px; display: block; margin-inline: auto; }
+    .pl-empty-state p { font-size: 14px; margin: 0; line-height: 1.6; }
+
+    /* Song detail bottom sheet */
+    .pl-overlay {
+      display: none; position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,0.65);
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      align-items: flex-end; justify-content: center;
+    }
+    .pl-overlay.open { display: flex; }
+    .pl-sheet {
+      width: 100%; max-width: 680px;
+      background: var(--ink2);
+      border-radius: 20px 20px 0 0;
+      border: 1px solid var(--border);
+      max-height: 78vh; overflow-y: auto;
+    }
+    .pl-sheet-hd {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0;
+      background: var(--ink2); z-index: 1;
+    }
+    .pl-sheet-title { font-size: 16px; font-weight: 600; color: var(--text); }
+    .pl-sheet-close {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--ink3); border: none; cursor: pointer;
+      color: var(--text2); display: flex; align-items: center; justify-content: center;
+      transition: background 0.2s;
+    }
+    .pl-sheet-close:hover { background: var(--ink4); }
+    .pl-sheet-close svg { width: 16px; height: 16px; }
+    .pl-sheet-songs { padding: 6px 0 20px; }
+    .pl-sheet-song {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 16px; transition: background 0.15s;
+    }
+    .pl-sheet-song:hover { background: var(--ink3); }
+    .pl-sheet-thumb {
+      width: 40px; height: 40px; border-radius: 8px;
+      background: var(--ink4); display: flex; align-items: center;
+      justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden;
+    }
+    .pl-sheet-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .pl-sheet-info { flex: 1; min-width: 0; }
+    .pl-sheet-sname { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .pl-sheet-sartist { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .pl-sheet-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 36px 0; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      display: flex !important;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+      background: rgba(10,10,11,0.96);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      height: 64px; justify-content: space-around; align-items: stretch;
+    }
+    html.light .bottom-nav { background: rgba(240,244,255,0.97); }
+    .bnav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      background: none; border: none; outline: none; cursor: pointer;
+      color: var(--text3); font-family: 'Outfit', sans-serif;
+      font-size: 10px; font-weight: 500; padding: 8px 0;
+      transition: color 0.2s; position: relative;
+      -webkit-appearance: none; appearance: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bnav-btn svg { width: 20px; height: 20px; transition: transform 0.2s; }
+    .bnav-btn.active { color: var(--gold); }
+    .bnav-btn.active svg { transform: scale(1.12); }
+    .bnav-btn.active::after {
+      content: ''; position: absolute; top: 0; left: 25%; right: 25%;
+      height: 2px; background: var(--gold); border-radius: 0 0 2px 2px;
+    }
+
+    /* Auth gate */
+    .auth-gate {
+      position: fixed; inset: 0; z-index: 400;
+      display: none; align-items: center; justify-content: center;
+      background: var(--ink); padding: 24px;
+    }
+    .auth-gate.show { display: flex; }
+    .auth-gate-card {
+      max-width: 340px; width: 100%;
+      background: var(--ink2); border: 1px solid var(--border);
+      border-radius: 24px; padding: 40px 28px; text-align: center;
+    }
+    .auth-gate-icon { font-size: 52px; margin-bottom: 16px; }
+    .auth-gate-title { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 8px; font-family: 'Cormorant Garamond', serif; }
+    .auth-gate-sub { font-size: 13px; color: var(--text3); margin-bottom: 28px; line-height: 1.6; }
+    .auth-gate-btn {
+      width: 100%; height: 48px;
+      background: var(--ink3); border: 1px solid var(--border);
+      border-radius: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      color: var(--text); font-family: 'Outfit', sans-serif;
+      font-size: 14px; font-weight: 500; transition: background 0.2s;
+      margin-bottom: 12px;
+    }
+    .auth-gate-btn:hover { background: var(--ink4); }
+    .auth-gate-back {
+      font-size: 13px; color: var(--text3); cursor: pointer;
+      background: none; border: none; font-family: 'Outfit', sans-serif;
+    }
+    .auth-gate-back:hover { color: var(--text2); text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="pl-page-shell">
+
+  <header class="pl-topbar">
+    <a class="pl-back" href="index.html" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <span class="pl-topbar-title">My Playlists</span>
+    <button class="pl-new-top" onclick="toggleCreate()">+ New</button>
+  </header>
+
+  <div class="pl-create-strip" id="plCreateStrip">
+    <input type="text" id="plNameInput" placeholder="Playlist name…" maxlength="40"
+      onkeydown="if(event.key==='Enter') createPlaylist()">
+    <button onclick="createPlaylist()">Create</button>
+  </div>
+
+  <div class="pl-grid" id="plGrid"></div>
+
+  <div class="pl-empty-state" id="plEmpty" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/>
+      <circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+    <p>No playlists yet.<br>Tap <strong>+ New</strong> to create one.</p>
+  </div>
+
+</div>
+
+<!-- Song detail sheet -->
+<div class="pl-overlay" id="plOverlay" onclick="overlayClick(event)">
+  <div class="pl-sheet">
+    <div class="pl-sheet-hd">
+      <span class="pl-sheet-title" id="plSheetTitle"></span>
+      <button class="pl-sheet-close" onclick="closeSheet()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+    <div class="pl-sheet-songs" id="plSheetSongs"></div>
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="bnav-btn" onclick="window.location.href='index.html'" aria-label="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+      <polyline points="9 21 9 12 15 12 15 21"/>
+    </svg>
+    <span>Home</span>
+  </button>
+  <button class="bnav-btn" onclick="window.location.href='search.html'" aria-label="Search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+    </svg>
+    <span>Search</span>
+  </button>
+  <button class="bnav-btn active" aria-label="Playlists">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/>
+      <circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+    <span>Playlists</span>
+  </button>
+  <button class="bnav-btn" onclick="window.location.href='mood.html'" aria-label="Mood">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+      <line x1="9" y1="9" x2="9.01" y2="9" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="15" y1="9" x2="15.01" y2="9" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>Mood</span>
+  </button>
+</nav>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-gate-card">
+    <div class="auth-gate-icon">🎵</div>
+    <div class="auth-gate-title">Login Required</div>
+    <div class="auth-gate-sub">Sign in to create and manage your playlists</div>
+    <button class="auth-gate-btn" onclick="window.location.href='login.html?redirect=playlist.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        <polyline points="10 17 15 12 10 7"/>
+        <line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      Login / Sign Up
+    </button>
+    <button class="auth-gate-back" onclick="window.location.href='index.html'">← Back to Home</button>
+  </div>
+</div>
+
+<script>
+  if (localStorage.getItem('musix-theme') === 'light') document.documentElement.classList.add('light');
+
+  let playlists = [];
+
+  function esc(s) {
+    return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function artCell(song) {
+    if (song?.artworkUrl) return `<div class="pl-art-cell"><img src="${song.artworkUrl}" alt=""></div>`;
+    return `<div class="pl-art-cell">${esc(song?.emoji || '🎵')}</div>`;
+  }
+
+  function buildArt(songs) {
+    if (!songs.length) return `<div class="pl-card-art art-empty">🎵</div>`;
+    if (songs.length === 1) return `<div class="pl-card-art art-one">${artCell(songs[0])}</div>`;
+    const c = [songs[0], songs[1] ?? songs[0], songs[2] ?? songs[0], songs[3] ?? songs[1] ?? songs[0]];
+    return `<div class="pl-card-art">${c.map(artCell).join('')}</div>`;
+  }
+
+  function renderPlaylists() {
+    const grid = document.getElementById('plGrid');
+    const empty = document.getElementById('plEmpty');
+    if (!playlists.length) {
+      grid.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    grid.innerHTML = playlists.map((pl, i) => `
+      <div class="pl-card" onclick="openSheet(${i})">
+        ${buildArt(pl.songs || [])}
+        <div class="pl-card-info">
+          <div class="pl-card-name">${esc(pl.name)}</div>
+          <div class="pl-card-foot">
+            <span class="pl-card-count">${(pl.songs || []).length} song${(pl.songs || []).length !== 1 ? 's' : ''}</span>
+            <button class="pl-card-del" onclick="deletePlaylist(event,'${pl._id}')" aria-label="Delete playlist">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"/>
+                <path d="M19 6l-1 14H6L5 6"/>
+                <path d="M10 11v6"/><path d="M14 11v6"/>
+                <path d="M9 6V4h6v2"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function openSheet(i) {
+    const pl = playlists[i];
+    document.getElementById('plSheetTitle').textContent = pl.name;
+    const songs = pl.songs || [];
+    document.getElementById('plSheetSongs').innerHTML = songs.length
+      ? songs.map(s => `
+          <div class="pl-sheet-song">
+            <div class="pl-sheet-thumb">${s.artworkUrl ? `<img src="${s.artworkUrl}" alt="">` : esc(s.emoji || '🎵')}</div>
+            <div class="pl-sheet-info">
+              <div class="pl-sheet-sname">${esc(s.name)}</div>
+              <div class="pl-sheet-sartist">${esc(s.artist)}</div>
+            </div>
+          </div>
+        `).join('')
+      : '<div class="pl-sheet-empty">No songs in this playlist yet</div>';
+    document.getElementById('plOverlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeSheet() {
+    document.getElementById('plOverlay').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function overlayClick(e) {
+    if (e.target === document.getElementById('plOverlay')) closeSheet();
+  }
+
+  function toggleCreate() {
+    const strip = document.getElementById('plCreateStrip');
+    strip.classList.toggle('open');
+    if (strip.classList.contains('open')) document.getElementById('plNameInput').focus();
+  }
+
+  async function createPlaylist() {
+    const input = document.getElementById('plNameInput');
+    const name = input.value.trim();
+    if (!name) return;
+    try {
+      const res = await fetch('/api/songs/playlists', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ name })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        playlists.unshift(data.playlist);
+        input.value = '';
+        document.getElementById('plCreateStrip').classList.remove('open');
+        renderPlaylists();
+      }
+    } catch {}
+  }
+
+  async function deletePlaylist(e, id) {
+    e.stopPropagation();
+    if (!confirm('Delete this playlist?')) return;
+    try {
+      await fetch(`/api/songs/playlists/${id}`, { method: 'DELETE', credentials: 'include' });
+      playlists = playlists.filter(p => p._id !== id);
+      renderPlaylists();
+    } catch {}
+  }
+
+  async function checkAuth() {
+    try {
+      const res = await fetch('/auth/me', { credentials: 'include' });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.user || null;
+    } catch { return null; }
+  }
+
+  async function init() {
+    const user = await checkAuth();
+    if (!user) {
+      document.getElementById('authGate').classList.add('show');
+      return;
+    }
+    try {
+      const res = await fetch('/api/songs/playlists', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        playlists = data.playlists || [];
+      }
+    } catch {}
+    renderPlaylists();
+  }
+
+  init();
+</script>
+</body>
+</html>

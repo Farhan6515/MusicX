@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search — MusicX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { background: var(--ink); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100vh; }
+
+    .search-page-shell {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 0 0 80px;
+    }
+
+    /* Top bar */
+    .search-topbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: rgba(10,10,11,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    html.light .search-topbar { background: rgba(240,244,255,0.95); }
+
+    .search-back {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--ink3); border: 1px solid var(--border2);
+      color: var(--text2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s; text-decoration: none;
+    }
+    .search-back:hover { background: var(--ink4); color: var(--text); }
+    .search-back svg { width: 18px; height: 18px; }
+
+    /* Search input */
+    .sp-input-wrap {
+      flex: 1;
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--ink3);
+      border: 1.5px solid var(--border);
+      border-radius: 50px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .sp-input-wrap:focus-within {
+      border-color: rgba(59,130,246,0.5);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.08);
+    }
+    .sp-input-wrap svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--text3); }
+    .sp-input-wrap input {
+      flex: 1; min-width: 0;
+      background: transparent; border: 0; outline: 0;
+      color: var(--text); font-family: 'Outfit', sans-serif; font-size: 15px;
+    }
+    .sp-input-wrap input::placeholder { color: var(--text3); }
+    .sp-clear-btn {
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); padding: 2px;
+      display: none; align-items: center; justify-content: center;
+      transition: color 0.2s;
+    }
+    .sp-clear-btn.visible { display: flex; }
+    .sp-clear-btn svg { width: 14px; height: 14px; }
+
+    /* Content area */
+    .sp-content { padding: 20px 16px; }
+
+    .sp-section-label {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text3);
+    }
+
+    /* History */
+    .sp-history-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .sp-clear-all {
+      background: none; border: none; cursor: pointer;
+      color: var(--gold2); font-family: 'Outfit', sans-serif;
+      font-size: 12px; padding: 0;
+    }
+    .sp-clear-all:hover { text-decoration: underline; }
+
+    #spHistoryList { display: flex; flex-direction: column; gap: 6px; }
+
+    .sp-history-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px; border-radius: var(--r3);
+      background: var(--ink3); cursor: pointer;
+      border: 1px solid transparent;
+      transition: background 0.18s, border-color 0.18s;
+    }
+    .sp-history-item:hover { background: var(--ink4); border-color: var(--border); }
+    .sp-history-item .sp-hi-icon { width: 14px; height: 14px; flex-shrink: 0; color: var(--text3); }
+    .sp-history-item span { flex: 1; font-size: 14px; color: var(--text2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sp-history-remove {
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); padding: 4px; opacity: 0.6;
+      display: flex; align-items: center; transition: opacity 0.2s;
+    }
+    .sp-history-remove:hover { opacity: 1; color: var(--text); }
+    .sp-history-remove svg { width: 13px; height: 13px; }
+
+    .sp-empty {
+      text-align: center; color: var(--text3);
+      font-size: 13px; padding: 36px 0;
+    }
+    .sp-empty svg { width: 40px; height: 40px; opacity: 0.25; margin-bottom: 10px; display: block; margin-inline: auto; }
+
+    /* Results */
+    #spResults { display: none; }
+    .sp-results-head {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .sp-results-count { font-size: 12px; color: var(--text3); }
+
+    /* Song item (same as main page) */
+    .song-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 11px 14px; border-radius: var(--r3);
+      cursor: pointer; transition: background 0.18s;
+      position: relative; overflow: hidden; width: 100%;
+      border: 1px solid transparent;
+    }
+    .song-item:hover { background: var(--ink3); border-color: var(--border); }
+    .song-num { font-size: 11px; color: var(--text3); width: 18px; text-align: center; flex-shrink: 0; font-family: 'DM Mono', monospace; }
+    .song-thumb {
+      width: 40px; height: 40px; border-radius: 8px;
+      background: var(--ink4); display: flex; align-items: center;
+      justify-content: center; font-size: 18px; flex-shrink: 0; overflow: hidden;
+    }
+    .song-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 8px; }
+    .song-info { flex: 1; min-width: 0; overflow: hidden; }
+    .song-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .song-artist { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .song-dur { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; flex-shrink: 0; }
+
+    /* Bottom nav */
+    .bottom-nav {
+      display: flex !important;
+      position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+      background: rgba(10,10,11,0.96);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      height: 64px; justify-content: space-around; align-items: stretch;
+    }
+    html.light .bottom-nav { background: rgba(240,244,255,0.97); }
+    .bnav-btn {
+      flex: 1; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 4px;
+      background: none; border: none; outline: none; cursor: pointer;
+      color: var(--text3); font-family: 'Outfit', sans-serif;
+      font-size: 10px; font-weight: 500; padding: 8px 0;
+      transition: color 0.2s; position: relative;
+      -webkit-appearance: none; appearance: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .bnav-btn svg { width: 20px; height: 20px; transition: transform 0.2s; }
+    .bnav-btn.active { color: var(--gold); }
+    .bnav-btn.active svg { transform: scale(1.12); }
+    .bnav-btn.active::after {
+      content: ''; position: absolute; top: 0; left: 25%; right: 25%;
+      height: 2px; background: var(--gold); border-radius: 0 0 2px 2px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="search-page-shell">
+
+  <!-- Top bar -->
+  <header class="search-topbar">
+    <a class="search-back" href="index.html" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M15 18l-6-6 6-6"/>
+      </svg>
+    </a>
+    <div class="sp-input-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+      </svg>
+      <input type="search" id="spInput" placeholder="Songs, artists, albums…" autocomplete="off" autofocus>
+      <button class="sp-clear-btn" id="spClearBtn" onclick="clearSearch()" aria-label="Clear">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="sp-content">
+
+    <!-- Recent searches -->
+    <div id="spHistory">
+      <div class="sp-history-head">
+        <span class="sp-section-label">Recent Searches</span>
+        <button class="sp-clear-all" onclick="clearAllHistory()">Clear all</button>
+      </div>
+      <div id="spHistoryList"></div>
+      <div class="sp-empty" id="spEmptyHistory" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+        </svg>
+        No recent searches
+      </div>
+    </div>
+
+    <!-- Results -->
+    <div id="spResults">
+      <div class="sp-results-head">
+        <span class="sp-section-label">Results</span>
+        <span class="sp-results-count" id="spCount"></span>
+      </div>
+      <div id="spResultsList"></div>
+      <div class="sp-empty" id="spNoResults" style="display:none">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+        </svg>
+        No results found
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Bottom nav -->
+<nav class="bottom-nav">
+  <button class="bnav-btn" onclick="window.location.href='index.html'" aria-label="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/>
+      <polyline points="9 21 9 12 15 12 15 21"/>
+    </svg>
+    <span>Home</span>
+  </button>
+  <button class="bnav-btn active" aria-label="Search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/>
+    </svg>
+    <span>Search</span>
+  </button>
+  <button class="bnav-btn" onclick="window.location.href='playlist.html'" aria-label="Playlists">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/>
+      <circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+      <circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+    </svg>
+    <span>Playlists</span>
+  </button>
+  <button class="bnav-btn" onclick="window.location.href='mood.html'" aria-label="Mood">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <circle cx="12" cy="12" r="9"/>
+      <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
+      <line x1="9" y1="9" x2="9.01" y2="9" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="15" y1="9" x2="15.01" y2="9" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <span>Mood</span>
+  </button>
+</nav>
+
+<script>
+  // Apply saved theme
+  if (localStorage.getItem('musix-theme') === 'light') document.documentElement.classList.add('light');
+
+  let _history = JSON.parse(localStorage.getItem('musix-search-history') || '[]');
+  let _results = [];
+  let _timer = null;
+  let _activeQuery = '';
+
+  const spInput = document.getElementById('spInput');
+  const spClearBtn = document.getElementById('spClearBtn');
+
+  function renderHistory() {
+    const list = document.getElementById('spHistoryList');
+    const empty = document.getElementById('spEmptyHistory');
+    if (!_history.length) {
+      list.innerHTML = '';
+      empty.style.display = 'block';
+      return;
+    }
+    empty.style.display = 'none';
+    list.innerHTML = _history.map((q, i) => `
+      <div class="sp-history-item" onclick="pickHistory(${i})">
+        <svg class="sp-hi-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+          <circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>${esc(q)}</span>
+        <button class="sp-history-remove" onclick="removeHistory(event,${i})" aria-label="Remove">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    `).join('');
+  }
+
+  function saveHistory(q) {
+    _history = [q, ..._history.filter(h => h !== q)].slice(0, 10);
+    localStorage.setItem('musix-search-history', JSON.stringify(_history));
+  }
+
+  function pickHistory(i) {
+    spInput.value = _history[i];
+    spInput.dispatchEvent(new Event('input'));
+  }
+
+  function removeHistory(e, i) {
+    e.stopPropagation();
+    _history.splice(i, 1);
+    localStorage.setItem('musix-search-history', JSON.stringify(_history));
+    renderHistory();
+  }
+
+  function clearAllHistory() {
+    _history = [];
+    localStorage.removeItem('musix-search-history');
+    renderHistory();
+  }
+
+  function clearSearch() {
+    spInput.value = '';
+    _activeQuery = '';
+    spInput.dispatchEvent(new Event('input'));
+    spInput.focus();
+  }
+
+  function showHistory() {
+    document.getElementById('spHistory').style.display = 'block';
+    document.getElementById('spResults').style.display = 'none';
+    spClearBtn.classList.remove('visible');
+  }
+
+  function showResults(songs, q) {
+    document.getElementById('spHistory').style.display = 'none';
+    document.getElementById('spResults').style.display = 'block';
+    document.getElementById('spCount').textContent = `${songs.length} results`;
+    document.getElementById('spNoResults').style.display = songs.length ? 'none' : 'block';
+    document.getElementById('spResultsList').innerHTML = songs.map((s, i) => `
+      <div class="song-item" onclick="playSong(${i})">
+        <div class="song-num">${i + 1}</div>
+        <div class="song-thumb">${s.artworkUrl ? `<img src="${s.artworkUrl}" alt="">` : (s.emoji || '🎵')}</div>
+        <div class="song-info">
+          <div class="song-name">${esc(s.name)}</div>
+          <div class="song-artist">${esc(s.artist)} · ${esc(s.album || '')}</div>
+        </div>
+        <span class="song-dur">${s.dur || ''}</span>
+      </div>
+    `).join('');
+  }
+
+  function playSong(idx) {
+    // Save results to sessionStorage so index.html can pick them up and play
+    sessionStorage.setItem('musix-queued-songs', JSON.stringify(_results));
+    sessionStorage.setItem('musix-queued-idx', idx);
+    window.location.href = 'index.html';
+  }
+
+  function esc(str) {
+    return String(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  spInput.addEventListener('input', (e) => {
+    const q = e.target.value.trim();
+    spClearBtn.classList.toggle('visible', q.length > 0);
+    if (!q) { _activeQuery = ''; showHistory(); return; }
+    if (q === _activeQuery) return; // same query — don't re-fetch (e.g. Enter re-triggers)
+
+    document.getElementById('spCount').textContent = 'Searching…';
+    document.getElementById('spHistory').style.display = 'none';
+    document.getElementById('spResults').style.display = 'block';
+    document.getElementById('spResultsList').innerHTML = '';
+
+    clearTimeout(_timer);
+    _timer = setTimeout(async () => {
+      try {
+        const params = new URLSearchParams({ q, mood: 'Happy' });
+        const res = await fetch(`/api/songs/search?${params}`);
+        const data = await res.json();
+        _results = data.songs || [];
+        _activeQuery = q;
+        showResults(_results, q);
+      } catch(err) {
+        document.getElementById('spCount').textContent = 'Error — try again';
+      }
+    }, 400);
+  });
+
+  function _commitHistory() {
+    const q = spInput.value.trim();
+    if (q) { saveHistory(q); renderHistory(); }
+  }
+
+  spInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); _commitHistory(); }
+  });
+
+  // mobile keyboards fire 'search' event instead of keydown Enter
+  spInput.addEventListener('search', (e) => { e.preventDefault(); _commitHistory(); });
+
+  renderHistory();
+</script>
+</body>
+</html>

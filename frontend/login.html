@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login — MusicX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: var(--ink);
+      color: var(--text);
+      font-family: 'Outfit', sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+      position: relative; overflow: hidden;
+    }
+
+    /* Ambient orbs */
+    .orb {
+      position: fixed; border-radius: 50%;
+      filter: blur(80px); pointer-events: none; opacity: 0.18;
+    }
+    .orb-1 { width: 400px; height: 400px; background: #3b82f6; top: -100px; right: -100px; }
+    .orb-2 { width: 320px; height: 320px; background: #8b5cf6; bottom: -80px; left: -80px; }
+
+    /* Card */
+    .auth-card {
+      width: 100%; max-width: 420px;
+      background: var(--ink2);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 40px 36px;
+      position: relative; z-index: 1;
+      box-shadow: 0 24px 80px rgba(0,0,0,0.4);
+    }
+
+    /* Logo */
+    .auth-logo {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 32px; text-decoration: none;
+    }
+    .auth-logo-mark {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      display: flex; align-items: center; justify-content: center;
+    }
+    .auth-logo-mark svg { width: 18px; height: 18px; fill: var(--ink); }
+    .auth-logo-text {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 600; color: var(--text);
+    }
+    .auth-logo-text span { color: var(--gold2); }
+
+    /* Tab toggle */
+    .auth-tabs {
+      display: flex; gap: 4px;
+      background: var(--ink3); border-radius: 14px;
+      padding: 4px; margin-bottom: 28px;
+    }
+    .auth-tab {
+      flex: 1; height: 36px; border: none; border-radius: 10px;
+      font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: all 0.2s;
+      background: transparent; color: var(--text3);
+    }
+    .auth-tab.active {
+      background: var(--ink);
+      color: var(--text);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    /* Form */
+    .auth-form { display: flex; flex-direction: column; gap: 14px; }
+
+    .auth-field { display: flex; flex-direction: column; gap: 6px; }
+    .auth-field label {
+      font-size: 12px; font-weight: 500; color: var(--text3);
+      letter-spacing: 0.4px;
+    }
+    .auth-field input {
+      height: 46px;
+      background: var(--ink3); border: 1.5px solid var(--border);
+      border-radius: 12px; padding: 0 14px;
+      color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px;
+      outline: none; transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+    }
+    .auth-field input:focus {
+      border-color: rgba(59,130,246,0.55);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+    .auth-field input::placeholder { color: var(--text3); }
+
+    /* Password wrapper with show/hide */
+    .pw-wrap { position: relative; }
+    .pw-wrap input { padding-right: 44px; }
+    .pw-toggle {
+      position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer;
+      color: var(--text3); display: flex; align-items: center;
+      transition: color 0.2s; padding: 4px;
+    }
+    .pw-toggle:hover { color: var(--text2); }
+    .pw-toggle svg { width: 16px; height: 16px; }
+
+    /* Error message */
+    .auth-error {
+      background: rgba(220,50,50,0.12);
+      border: 1px solid rgba(220,50,50,0.3);
+      border-radius: 10px; padding: 10px 13px;
+      font-size: 13px; color: #f87171;
+      display: none;
+    }
+    .auth-error.show { display: block; }
+
+    /* Submit button */
+    .auth-submit {
+      height: 48px; width: 100%;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      border: none; border-radius: 14px;
+      color: var(--ink); font-family: 'Outfit', sans-serif;
+      font-size: 15px; font-weight: 600; cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, opacity 0.2s;
+      margin-top: 4px;
+    }
+    .auth-submit:hover { transform: translateY(-1px); box-shadow: 0 8px 28px rgba(59,130,246,0.3); }
+    .auth-submit:active { transform: scale(0.98); }
+    .auth-submit:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+    /* Divider */
+    .auth-divider {
+      display: flex; align-items: center; gap: 12px;
+      margin: 20px 0;
+    }
+    .auth-divider::before, .auth-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+    .auth-divider span { font-size: 12px; color: var(--text3); white-space: nowrap; }
+
+    /* Google button */
+    .google-btn {
+      height: 48px; width: 100%;
+      background: var(--ink3); border: 1.5px solid var(--border);
+      border-radius: 14px; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      color: var(--text); font-family: 'Outfit', sans-serif;
+      font-size: 14px; font-weight: 500;
+      transition: background 0.2s, border-color 0.2s;
+    }
+    .google-btn:hover { background: var(--ink4); border-color: var(--border2); }
+    .google-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Footer note */
+    .auth-note {
+      text-align: center; font-size: 12px; color: var(--text3);
+      margin-top: 20px; line-height: 1.5;
+    }
+
+    /* Hidden helper */
+    .hidden { display: none !important; }
+
+    @media (max-width: 480px) {
+      .auth-card { padding: 28px 20px; border-radius: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="auth-card">
+
+  <a class="auth-logo" href="index.html">
+    <div class="auth-logo-mark">
+      <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+    </div>
+    <span class="auth-logo-text">Music<span>X</span></span>
+  </a>
+
+  <!-- Tab toggle -->
+  <div class="auth-tabs">
+    <button class="auth-tab active" id="tabLogin" onclick="switchTab('login')">Login</button>
+    <button class="auth-tab" id="tabSignup" onclick="switchTab('signup')">Sign Up</button>
+  </div>
+
+  <!-- Error message -->
+  <div class="auth-error" id="authError"></div>
+
+  <!-- Form -->
+  <form class="auth-form" id="authForm" onsubmit="submitForm(event)">
+
+    <!-- Name field (signup only) -->
+    <div class="auth-field hidden" id="nameField">
+      <label for="nameInput">Full Name</label>
+      <input type="text" id="nameInput" placeholder="Your name" autocomplete="name">
+    </div>
+
+    <!-- Email -->
+    <div class="auth-field">
+      <label for="emailInput">Email</label>
+      <input type="email" id="emailInput" placeholder="you@example.com" autocomplete="email" required>
+    </div>
+
+    <!-- Password -->
+    <div class="auth-field">
+      <label for="passwordInput">Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="passwordInput" placeholder="••••••••" autocomplete="current-password" required>
+        <button type="button" class="pw-toggle" onclick="togglePassword()" aria-label="Show/hide password">
+          <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+            <circle cx="12" cy="12" r="3"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Confirm password (signup only) -->
+    <div class="auth-field hidden" id="confirmField">
+      <label for="confirmInput">Confirm Password</label>
+      <div class="pw-wrap">
+        <input type="password" id="confirmInput" placeholder="••••••••" autocomplete="new-password">
+      </div>
+    </div>
+
+    <button type="submit" class="auth-submit" id="submitBtn">Login</button>
+  </form>
+
+  <div class="auth-divider"><span>OR</span></div>
+
+  <button class="google-btn" onclick="loginWithGoogle()">
+    <svg viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.1c-.22-.66-.35-1.36-.35-2.1s.13-1.44.35-2.1V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l3.66-2.84z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06L5.84 9.9C6.71 7.3 9.14 5.38 12 5.38z"/>
+    </svg>
+    Continue with Google
+  </button>
+
+  <p class="auth-note">By continuing you agree to MusicX's terms. Your data is stored securely.</p>
+
+</div>
+
+<script>
+  if (localStorage.getItem('musix-theme') === 'light') document.documentElement.classList.add('light');
+
+  let activeTab = 'login';
+
+  // Redirect param: ?redirect=playlist → go to playlist.html after login
+  const redirectTo = new URLSearchParams(location.search).get('redirect') || 'index.html';
+
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+    document.getElementById('tabSignup').classList.toggle('active', tab === 'signup');
+    document.getElementById('nameField').classList.toggle('hidden', tab === 'login');
+    document.getElementById('confirmField').classList.toggle('hidden', tab === 'login');
+    document.getElementById('submitBtn').textContent = tab === 'login' ? 'Login' : 'Create Account';
+    document.getElementById('passwordInput').autocomplete = tab === 'login' ? 'current-password' : 'new-password';
+    clearError();
+  }
+
+  function showError(msg) {
+    const el = document.getElementById('authError');
+    el.textContent = msg;
+    el.classList.add('show');
+  }
+
+  function clearError() {
+    document.getElementById('authError').classList.remove('show');
+  }
+
+  function togglePassword() {
+    const input = document.getElementById('passwordInput');
+    const isText = input.type === 'text';
+    input.type = isText ? 'password' : 'text';
+    document.getElementById('eyeIcon').innerHTML = isText
+      ? '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>'
+      : '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+  }
+
+  async function submitForm(e) {
+    e.preventDefault();
+    clearError();
+
+    const email = document.getElementById('emailInput').value.trim();
+    const password = document.getElementById('passwordInput').value;
+    const btn = document.getElementById('submitBtn');
+
+    if (activeTab === 'signup') {
+      const name = document.getElementById('nameInput').value.trim();
+      const confirm = document.getElementById('confirmInput').value;
+      if (!name) { showError('Please enter your name'); return; }
+      if (password.length < 6) { showError('Password must be at least 6 characters'); return; }
+      if (password !== confirm) { showError('Passwords do not match'); return; }
+
+      btn.disabled = true;
+      btn.textContent = 'Creating account…';
+      try {
+        const res = await fetch('/auth/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ name, email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error || 'Signup failed'); return; }
+        window.location.href = redirectTo;
+      } catch {
+        showError('Network error — please try again');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Create Account';
+      }
+
+    } else {
+      btn.disabled = true;
+      btn.textContent = 'Logging in…';
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        if (!res.ok) { showError(data.error || 'Login failed'); return; }
+        window.location.href = redirectTo;
+      } catch {
+        showError('Network error — please try again');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Login';
+      }
+    }
+  }
+
+  function loginWithGoogle() {
+    window.location.href = '/auth/google';
+  }
+
+  // Auto-switch to signup if ?tab=signup
+  if (new URLSearchParams(location.search).get('tab') === 'signup') switchTab('signup');
+</script>
+</body>
+</html>

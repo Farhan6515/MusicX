@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mood — MusicX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/face-api.js@0.22.2/dist/face-api.min.js"></script>
+  <style>
+    body { background: var(--ink); color: var(--text); font-family: 'Outfit', sans-serif; min-height: 100vh; }
+
+    .mood-page { max-width: 680px; margin: 0 auto; padding: 0 0 90px; }
+
+    /* ── Top bar ── */
+    .mood-topbar {
+      position: sticky; top: 0; z-index: 100;
+      display: flex; align-items: center; gap: 12px;
+      padding: 14px 16px;
+      background: rgba(10,10,11,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+    }
+    html.light .mood-topbar { background: rgba(240,244,255,0.95); }
+    .mood-back {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--ink3); border: 1px solid var(--border2);
+      color: var(--text2); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0; transition: all 0.2s; text-decoration: none;
+    }
+    .mood-back:hover { background: var(--ink4); color: var(--text); }
+    .mood-back svg { width: 18px; height: 18px; }
+    .mood-topbar-title { flex: 1; font-size: 17px; font-weight: 600; color: var(--text); }
+
+    /* ── Current Mood Banner ── */
+    .mood-banner {
+      margin: 16px 16px 0; padding: 22px 20px;
+      border-radius: 20px; background: var(--ink2);
+      border: 1px solid var(--border); position: relative; overflow: hidden;
+    }
+    .mood-banner::before {
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 80% at 80% 50%, rgba(59,130,246,0.08), transparent);
+      pointer-events: none;
+    }
+    .mood-banner-label { font-family: 'DM Mono', monospace; font-size: 10px; letter-spacing: 2px; color: var(--text3); text-transform: uppercase; margin-bottom: 8px; }
+    .mood-banner-row { display: flex; align-items: center; gap: 14px; }
+    .mood-banner-emoji { font-size: 52px; line-height: 1; flex-shrink: 0; filter: drop-shadow(0 0 14px rgba(59,130,246,0.25)); }
+    .mood-banner-name { font-family: 'Cormorant Garamond', serif; font-size: 34px; font-weight: 600; color: var(--text); line-height: 1; }
+    .mood-banner-desc { font-size: 12px; color: var(--text3); margin-top: 4px; }
+
+    /* ── Section heading ── */
+    .m-section { padding: 20px 16px 0; }
+    .m-section-title {
+      font-size: 13px; font-weight: 600; color: var(--text);
+      margin-bottom: 12px; display: flex; align-items: center; gap: 8px;
+    }
+    .m-section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+    /* ── Camera Scan Card ── */
+    .scan-card { background: var(--ink2); border: 1px solid var(--border); border-radius: 18px; overflow: hidden; }
+
+    .scan-camera-area {
+      position: relative; height: 280px;
+      background: #000;
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    /* video (hidden until camera starts) */
+    #moodVideo {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      object-fit: cover; display: none; z-index: 1;
+      transform: scaleX(-1); /* mirror */
+    }
+
+    /* face detection canvas (hidden until camera starts) */
+    #faceCanvas {
+      position: absolute; inset: 0;
+      width: 100%; height: 100%;
+      pointer-events: none; z-index: 2; display: none;
+    }
+
+    /* hidden capture canvas */
+    #moodCanvas { display: none; position: absolute; }
+
+    /* rings overlay (shown when camera is off) */
+    .scan-rings-overlay {
+      position: absolute; inset: 0; z-index: 3;
+      display: flex; align-items: center; justify-content: center;
+      pointer-events: none;
+    }
+    .scan-rings-wrap { position: relative; width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; }
+    .sring { position: absolute; border-radius: 50%; border: 1px solid rgba(59,130,246,0.3); animation: sring-pulse 3s ease-in-out infinite; }
+    .sring-1 { width: 100px; height: 100px; animation-delay: 0s; }
+    .sring-2 { width: 76px; height: 76px; animation-delay: 0.6s; }
+    .sring-3 { width: 52px; height: 52px; animation-delay: 1.2s; }
+    @keyframes sring-pulse { 0%,100% { opacity:0.4; transform:scale(1); } 50% { opacity:1; transform:scale(1.06); } }
+    .sring-face { width: 42px; height: 42px; border-radius: 50%; background: var(--ink4); border: 1px solid var(--border2); display: flex; align-items: center; justify-content: center; font-size: 22px; z-index: 2; position: relative; transition: transform 0.2s; }
+    .sring-line { position: absolute; left: 0; right: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--gold), transparent); animation: sline 2.2s ease-in-out infinite; opacity: 0; }
+    @keyframes sline { 0% { top:10%; opacity:0; } 20% { opacity:0.7; } 80% { opacity:0.7; } 100% { top:90%; opacity:0; } }
+
+    /* camera state — show video + canvas, hide rings */
+    .scan-camera-area.camera-on #moodVideo { display: block; }
+    .scan-camera-area.camera-on #faceCanvas { display: block; }
+    .scan-camera-area.camera-on .scan-rings-overlay { display: none; }
+
+    /* model loading badge */
+    .model-status {
+      position: absolute; top: 10px; right: 10px; z-index: 10;
+      background: rgba(0,0,0,0.6); backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 4px 10px;
+      font-size: 10px; color: rgba(255,255,255,0.6);
+      display: flex; align-items: center; gap: 5px;
+      transition: opacity 0.4s;
+    }
+    .model-status.ready { color: #4ade80; border-color: rgba(74,222,128,0.3); }
+    .model-status.hidden { opacity: 0; pointer-events: none; }
+    .model-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+    .model-dot.spinning { animation: spin 1s linear infinite; border-radius: 0; border-top: 2px solid currentColor; background: none; width: 8px; height: 8px; border: 2px solid transparent; border-top-color: currentColor; border-radius: 50%; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .scan-camera-msg {
+      position: absolute; bottom: 10px; left: 0; right: 0; z-index: 10;
+      text-align: center; font-size: 11px; color: rgba(255,255,255,0.6);
+      padding: 0 16px; pointer-events: none;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+
+    .scan-card-foot { padding: 14px 16px; display: flex; align-items: center; gap: 10px; }
+    .scan-start-btn {
+      flex: 1; height: 42px; background: var(--ink4); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--text2); font-family: 'Outfit', sans-serif;
+      font-size: 13px; font-weight: 500; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;
+    }
+    .scan-start-btn:hover { background: var(--ink3); border-color: rgba(59,130,246,0.35); color: var(--text); }
+    .scan-start-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .scan-start-btn svg { width: 16px; height: 16px; }
+    .scan-go-btn {
+      flex: 1.5; height: 42px;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      border: none; border-radius: 12px; color: var(--ink);
+      font-family: 'Outfit', sans-serif; font-size: 13px; font-weight: 600;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 7px;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .scan-go-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(59,130,246,0.28); }
+    .scan-go-btn:active { transform: scale(0.97); }
+    .scan-go-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .scan-go-btn svg { width: 15px; height: 15px; }
+
+    /* Scan result bar */
+    .scan-result-bar { margin: 0 16px 16px; padding: 12px 16px; background: var(--ink3); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; display: none; align-items: center; gap: 10px; }
+    .scan-result-bar.show { display: flex; }
+    .scan-result-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--gold); flex-shrink: 0; animation: pulse-dot 1.5s ease-in-out infinite; }
+    @keyframes pulse-dot { 0%,100% { opacity:1; } 50% { opacity:0.3; } }
+    .scan-result-text { font-size: 13px; color: var(--text2); }
+    .scan-result-name { font-weight: 600; color: var(--gold2); }
+
+    /* ── Manual Mood Grid ── */
+    .mood-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+    .mood-btn { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; background: var(--ink3); border: 1.5px solid var(--border2); border-radius: 16px; cursor: pointer; transition: all 0.2s; padding: 10px 4px; -webkit-tap-highlight-color: transparent; }
+    .mood-btn:hover { background: var(--ink4); border-color: rgba(59,130,246,0.3); transform: translateY(-2px); }
+    .mood-btn.active { background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.45); box-shadow: 0 0 0 2px rgba(59,130,246,0.12); }
+    .mood-btn-emoji { font-size: 26px; line-height: 1; }
+    .mood-btn-name { font-size: 10px; font-weight: 500; color: var(--text3); }
+    .mood-btn.active .mood-btn-name { color: #60a5fa; }
+
+    /* ── Suggested Songs ── */
+    .suggested-songs { display: flex; flex-direction: column; gap: 2px; }
+    .sug-song { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 12px; cursor: pointer; transition: background 0.15s; }
+    .sug-song:hover { background: var(--ink3); }
+    .sug-thumb { width: 44px; height: 44px; border-radius: 10px; background: var(--ink4); display: flex; align-items: center; justify-content: center; font-size: 20px; flex-shrink: 0; overflow: hidden; }
+    .sug-thumb img { width: 100%; height: 100%; object-fit: cover; border-radius: 10px; }
+    .sug-info { flex: 1; min-width: 0; }
+    .sug-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .sug-artist { font-size: 11px; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+    .sug-play-icon { width: 28px; height: 28px; border-radius: 50%; background: var(--ink4); border: 1px solid var(--border2); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: var(--text3); transition: all 0.2s; }
+    .sug-song:hover .sug-play-icon { background: rgba(59,130,246,0.15); border-color: rgba(59,130,246,0.4); color: #60a5fa; }
+    .sug-play-icon svg { width: 12px; height: 12px; }
+    .sug-empty { text-align: center; color: var(--text3); font-size: 13px; padding: 32px 0; }
+    .sug-loading { display: flex; flex-direction: column; gap: 8px; padding: 4px 0; }
+    .sug-skel { height: 60px; border-radius: 12px; background: var(--ink3); animation: shimmer 1.4s ease-in-out infinite; }
+    @keyframes shimmer { 0%,100% { opacity:0.5; } 50% { opacity:1; } }
+
+    /* ── Bottom nav ── */
+    .bottom-nav { display: flex !important; position: fixed; bottom: 0; left: 0; right: 0; z-index: 300; background: rgba(10,10,11,0.96); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--border); height: 64px; justify-content: space-around; align-items: stretch; }
+    html.light .bottom-nav { background: rgba(240,244,255,0.97); }
+    .bnav-btn { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; background: none; border: none; outline: none; cursor: pointer; color: var(--text3); font-family: 'Outfit', sans-serif; font-size: 10px; font-weight: 500; padding: 8px 0; transition: color 0.2s; position: relative; -webkit-appearance: none; appearance: none; -webkit-tap-highlight-color: transparent; }
+    .bnav-btn svg { width: 20px; height: 20px; transition: transform 0.2s; }
+    .bnav-btn.active { color: var(--gold); }
+    .bnav-btn.active svg { transform: scale(1.12); }
+    .bnav-btn.active::after { content: ''; position: absolute; top: 0; left: 25%; right: 25%; height: 2px; background: var(--gold); border-radius: 0 0 2px 2px; }
+
+    /* Auth gate */
+    .auth-gate { position: fixed; inset: 0; z-index: 400; display: none; align-items: center; justify-content: center; background: var(--ink); padding: 24px; }
+    .auth-gate.show { display: flex; }
+    .auth-gate-card { max-width: 340px; width: 100%; background: var(--ink2); border: 1px solid var(--border); border-radius: 24px; padding: 40px 28px; text-align: center; }
+    .auth-gate-icon { font-size: 52px; margin-bottom: 16px; }
+    .auth-gate-title { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 8px; font-family: 'Cormorant Garamond', serif; }
+    .auth-gate-sub { font-size: 13px; color: var(--text3); margin-bottom: 28px; line-height: 1.6; }
+    .auth-gate-btn { width: 100%; height: 48px; background: var(--ink3); border: 1px solid var(--border); border-radius: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; color: var(--text); font-family: 'Outfit', sans-serif; font-size: 14px; font-weight: 500; transition: background 0.2s; margin-bottom: 12px; }
+    .auth-gate-btn:hover { background: var(--ink4); }
+    .auth-gate-back { font-size: 13px; color: var(--text3); cursor: pointer; background: none; border: none; font-family: 'Outfit', sans-serif; }
+    .auth-gate-back:hover { color: var(--text2); text-decoration: underline; }
+  </style>
+</head>
+<body>
+
+<div class="mood-page">
+
+  <header class="mood-topbar">
+    <a class="mood-back" href="index.html" aria-label="Back">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </a>
+    <span class="mood-topbar-title">Your Mood</span>
+  </header>
+
+  <div class="mood-banner" id="moodBanner">
+    <div class="mood-banner-label">Current Mood</div>
+    <div class="mood-banner-row">
+      <div class="mood-banner-emoji" id="bannerEmoji">😊</div>
+      <div class="mood-banner-info">
+        <div class="mood-banner-name" id="bannerName">Happy</div>
+        <div class="mood-banner-desc" id="bannerDesc">Songs curated for your vibe</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scan-result-bar" id="scanResultBar">
+    <div class="scan-result-dot"></div>
+    <div class="scan-result-text">Mood detected: <span class="scan-result-name" id="scanResultName">Happy</span> — Songs updated</div>
+  </div>
+
+  <div class="m-section">
+    <div class="m-section-title">AI Mood Scan</div>
+    <div class="scan-card">
+      <div class="scan-camera-area" id="scanArea">
+
+        <!-- Camera feed -->
+        <video id="moodVideo" autoplay muted playsinline></video>
+
+        <!-- Face detection overlay canvas -->
+        <canvas id="faceCanvas"></canvas>
+
+        <!-- Hidden capture canvas for backend -->
+        <canvas id="moodCanvas" width="320" height="240"></canvas>
+
+        <!-- Rings animation (shown when camera is off) -->
+        <div class="scan-rings-overlay" id="ringsOverlay">
+          <div class="scan-rings-wrap">
+            <div class="sring sring-1"></div>
+            <div class="sring sring-2"></div>
+            <div class="sring sring-3"></div>
+            <div class="sring-face" id="scanFace">😐</div>
+            <div class="sring-line"></div>
+          </div>
+        </div>
+
+        <!-- AI model status badge -->
+        <div class="model-status" id="modelStatus">
+          <div class="model-dot spinning"></div>
+          <span id="modelStatusText">Loading AI…</span>
+        </div>
+
+        <!-- Message bar at bottom of camera area -->
+        <div class="scan-camera-msg" id="scanMsg">Tap "Start Camera" to enable mood detection</div>
+      </div>
+
+      <div class="scan-card-foot">
+        <button class="scan-start-btn" id="cameraBtn" onclick="toggleCamera()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Start Camera
+        </button>
+        <button class="scan-go-btn" id="scanBtn" onclick="runScan()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/>
+          </svg>
+          Scan My Mood
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="m-section">
+    <div class="m-section-title">Pick Your Mood</div>
+    <div class="mood-grid" id="moodGrid"></div>
+  </div>
+
+  <div class="m-section" style="padding-bottom:16px">
+    <div class="m-section-title">Suggested for Your Mood</div>
+    <div id="suggestedContainer">
+      <div class="sug-loading">
+        <div class="sug-skel"></div><div class="sug-skel"></div>
+        <div class="sug-skel"></div><div class="sug-skel"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-gate-card">
+    <div class="auth-gate-icon">😊</div>
+    <div class="auth-gate-title">Login Required</div>
+    <div class="auth-gate-sub">Sign in to scan your mood and get personalised song suggestions</div>
+    <button class="auth-gate-btn" onclick="window.location.href='login.html?redirect=mood.html'">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" width="18" height="18">
+        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+        <polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/>
+      </svg>
+      Login / Sign Up
+    </button>
+    <button class="auth-gate-back" onclick="window.location.href='index.html'">← Back to Home</button>
+  </div>
+</div>
+
+<nav class="bottom-nav">
+  <button class="bnav-btn" onclick="window.location.href='index.html'" aria-label="Home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V9.5z"/><polyline points="9 21 9 12 15 12 15 21"/></svg>
+    <span>Home</span>
+  </button>
+  <button class="bnav-btn" onclick="window.location.href='search.html'" aria-label="Search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="7"/><line x1="16.5" y1="16.5" x2="21" y2="21"/></svg>
+    <span>Search</span>
+  </button>
+  <button class="bnav-btn" onclick="window.location.href='playlist.html'" aria-label="Playlists">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="3" cy="6" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="18" r="1.5" fill="currentColor" stroke="none"/></svg>
+    <span>Playlists</span>
+  </button>
+  <button class="bnav-btn active" aria-label="Mood">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9" stroke-width="2.5" stroke-linecap="round"/><line x1="15" y1="9" x2="15.01" y2="9" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <span>Mood</span>
+  </button>
+</nav>
+
+<script>
+if (localStorage.getItem('musix-theme') === 'light') document.documentElement.classList.add('light');
+
+const MOODS = [
+  { emoji: '😊', name: 'Happy',      desc: 'Upbeat & joyful tracks' },
+  { emoji: '😢', name: 'Sad',        desc: 'Emotional & heartfelt songs' },
+  { emoji: '😌', name: 'Chill',      desc: 'Relaxed & easygoing vibes' },
+  { emoji: '🎯', name: 'Focus',      desc: 'Deep work & concentration' },
+  { emoji: '💕', name: 'Romance',    desc: 'Love songs & slow dances' },
+  { emoji: '😤', name: 'Angry',      desc: 'High-energy & intense beats' },
+  { emoji: '🎉', name: 'Party',      desc: 'Dance & celebration anthems' },
+  { emoji: '🌙', name: 'Sleepy',     desc: 'Calm & dreamy lullabies' },
+];
+const MOOD_MAP = Object.fromEntries(MOODS.map(m => [m.name, m]));
+
+// face-api.js expression → our mood
+const EXPR_MAP = {
+  happy:     { mood: 'Happy',      emoji: '😊' },
+  sad:       { mood: 'Sad',        emoji: '😢' },
+  neutral:   { mood: 'Chill',      emoji: '😌' },
+  angry:     { mood: 'Angry',      emoji: '😤' },
+  fearful:   { mood: 'Melancholic',emoji: '😨' },
+  disgusted: { mood: 'Angry',      emoji: '🤢' },
+  surprised: { mood: 'Happy',      emoji: '😲' },
+};
+
+const EXPR_EMOJI = { happy:'😊', sad:'😢', neutral:'😐', angry:'😠', fearful:'😨', disgusted:'🤢', surprised:'😲' };
+
+let currentMood = localStorage.getItem('musix-mood') || 'Happy';
+let cameraStream  = null;
+let suggestedSongs = [];
+let modelsLoaded   = false;
+let faceDetecting  = false;
+let isDetecting    = false;   // guard: one detection at a time
+let detectionTimer = null;
+let lastExpression = null;
+let scanInProgress = false;
+
+const MODEL_URL = '/models';
+
+// ── Helpers ─────────────────────────────────────────────
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function setScanMsg(text) {
+  const el = document.getElementById('scanMsg');
+  if (el) el.textContent = text;
+}
+
+function setModelStatus(state, text) {
+  const badge = document.getElementById('modelStatus');
+  const dot   = badge.querySelector('.model-dot');
+  const label = document.getElementById('modelStatusText');
+  label.textContent = text;
+  badge.className = 'model-status' + (state === 'ready' ? ' ready' : '');
+  dot.className   = 'model-dot'   + (state === 'loading' ? ' spinning' : '');
+  if (state === 'hidden') badge.classList.add('hidden');
+}
+
+// polyfill for roundRect
+function fillRoundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y,     x + w, y + r,     r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x,     y + h, x,     y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x,     y,     x + r, y,         r);
+  ctx.closePath();
+  ctx.fill();
+}
+
+// ── AI Model loading ─────────────────────────────────────
+
+async function loadFaceModels() {
+  if (!window.faceapi) { setModelStatus('hidden', ''); return; }
+  try {
+    setModelStatus('loading', 'Loading AI…');
+    await Promise.all([
+      faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+      faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL),
+    ]);
+    modelsLoaded = true;
+    setModelStatus('ready', 'AI Ready');
+    setTimeout(() => setModelStatus('hidden', ''), 2500);
+  } catch {
+    setModelStatus('hidden', '');
+  }
+}
+
+// ── Banner ───────────────────────────────────────────────
+
+function updateBanner(name) {
+  const m = MOOD_MAP[name] || { emoji: '😊', name, desc: 'Songs curated for your vibe' };
+  document.getElementById('bannerEmoji').textContent = m.emoji;
+  document.getElementById('bannerName').textContent  = m.name;
+  document.getElementById('bannerDesc').textContent  = m.desc;
+}
+
+// ── Mood grid ────────────────────────────────────────────
+
+function renderMoodGrid() {
+  document.getElementById('moodGrid').innerHTML = MOODS.map(m => `
+    <button class="mood-btn${m.name === currentMood ? ' active' : ''}" onclick="pickMood('${m.name}')">
+      <span class="mood-btn-emoji">${m.emoji}</span>
+      <span class="mood-btn-name">${m.name}</span>
+    </button>
+  `).join('');
+}
+
+async function pickMood(name) {
+  currentMood = name;
+  localStorage.setItem('musix-mood', name);
+  updateBanner(name);
+  renderMoodGrid();
+  await loadSuggested(name);
+}
+
+// ── Camera ───────────────────────────────────────────────
+
+async function toggleCamera() {
+  if (cameraStream) { stopCamera(); return; }
+  if (!navigator.mediaDevices?.getUserMedia || !window.isSecureContext) {
+    setScanMsg('Camera needs HTTPS — use manual selection below');
+    return;
+  }
+  const btn = document.getElementById('cameraBtn');
+  btn.disabled = true;
+  setScanMsg('Starting camera…');
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 640 }, height: { ideal: 480 } },
+      audio: false,
+    });
+    const video = document.getElementById('moodVideo');
+    video.srcObject = cameraStream;
+    await video.play().catch(() => {});
+    document.getElementById('scanArea').classList.add('camera-on');
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+      <line x1="1" y1="1" x2="23" y2="23"/>
+      <path d="M21 21H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h3m3-3h6l2 3h4a2 2 0 0 1 2 2v9.34"/>
+      <circle cx="12" cy="13" r="4"/></svg> Stop Camera`;
+    btn.disabled = false;
+    if (modelsLoaded) {
+      setScanMsg('Look at the camera — detecting your expression…');
+      startDetectionLoop();
+    } else {
+      setScanMsg('Camera ready — click "Scan My Mood"');
+    }
+  } catch (err) {
+    cameraStream = null;
+    btn.disabled = false;
+    setScanMsg(err.name === 'NotAllowedError'
+      ? 'Camera blocked — allow access in browser settings'
+      : 'Could not access camera');
+  }
+}
+
+function stopCamera() {
+  stopDetectionLoop();
+  if (!cameraStream) return;
+  cameraStream.getTracks().forEach(t => t.stop());
+  cameraStream = null;
+  const video = document.getElementById('moodVideo');
+  video.srcObject = null;
+  const canvas = document.getElementById('faceCanvas');
+  canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height);
+  document.getElementById('scanArea').classList.remove('camera-on');
+  const btn = document.getElementById('cameraBtn');
+  btn.disabled = false;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/>
+    <circle cx="12" cy="13" r="4"/></svg> Start Camera`;
+  setScanMsg('Tap "Start Camera" to enable mood detection');
+  lastExpression = null;
+}
+
+// ── Face detection loop ──────────────────────────────────
+
+function startDetectionLoop() {
+  if (!modelsLoaded) return;
+  faceDetecting = true;
+  runDetect();
+}
+
+function stopDetectionLoop() {
+  faceDetecting = false;
+  isDetecting   = false;
+  clearTimeout(detectionTimer);
+}
+
+async function runDetect() {
+  if (!faceDetecting || !cameraStream) return;
+
+  const video  = document.getElementById('moodVideo');
+  const canvas = document.getElementById('faceCanvas');
+  const ctx    = canvas.getContext('2d');
+
+  if (!isDetecting && video.videoWidth && video.videoHeight) {
+    isDetecting = true;
+
+    // Sync canvas pixel size to its CSS display size
+    const rect = canvas.getBoundingClientRect();
+    const dw = Math.round(rect.width)  || canvas.parentElement.offsetWidth  || 320;
+    const dh = Math.round(rect.height) || canvas.parentElement.offsetHeight || 280;
+    if (canvas.width !== dw || canvas.height !== dh) { canvas.width = dw; canvas.height = dh; }
+
+    try {
+      const rawDetections = await faceapi
+        .detectAllFaces(video, new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.4 }))
+        .withFaceExpressions();
+
+      // Scale coords: video natural resolution → canvas display size (object-fit: cover)
+      const detections = scaleCoverResults(rawDetections, video.videoWidth, video.videoHeight, dw, dh);
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      if (detections.length > 0) {
+        const d = detections[0];
+        const topExpr = Object.entries(d.expressions).sort(([,a],[,b]) => b - a)[0];
+        lastExpression = topExpr[0];
+        const conf   = Math.round(topExpr[1] * 100);
+        const mapped = EXPR_MAP[lastExpression] || { mood: 'Chill', emoji: '😌' };
+
+        document.getElementById('scanFace').textContent = mapped.emoji;
+
+        // Mirror the box x-coordinate because video is CSS-mirrored (scaleX(-1))
+        const box = d.detection.box;
+        const mirroredBox = { x: dw - box.x - box.width, y: box.y, width: box.width, height: box.height };
+        drawFaceBox(ctx, mirroredBox, lastExpression, conf, mapped.emoji);
+        setScanMsg('');
+      } else {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setScanMsg('No face detected — move closer');
+        lastExpression = null;
+        document.getElementById('scanFace').textContent = '😐';
+      }
+    } catch {}
+
+    isDetecting = false;
+  }
+
+  detectionTimer = setTimeout(runDetect, 200);
+}
+
+// Scale bounding boxes from video natural resolution to CSS display size
+// accounting for object-fit: cover cropping behaviour
+function scaleCoverResults(detections, vw, vh, dw, dh) {
+  const videoAr  = vw / vh;
+  const canvasAr = dw / dh;
+  let scale, ox, oy;
+  if (videoAr > canvasAr) {
+    scale = dh / vh; ox = (dw - vw * scale) / 2; oy = 0;
+  } else {
+    scale = dw / vw; ox = 0; oy = (dh - vh * scale) / 2;
+  }
+  return detections.map(d => {
+    const b = d.detection.box;
+    const scaled = {
+      x: b.x * scale + ox,
+      y: b.y * scale + oy,
+      width:  b.width  * scale,
+      height: b.height * scale,
+    };
+    const expressions = {};
+    for (const [k, v] of Object.entries(d.expressions)) expressions[k] = v;
+    return { detection: { box: scaled }, expressions };
+  });
+}
+
+function drawFaceBox(ctx, box, expr, conf, emoji) {
+  const { x, y, width: w, height: h } = box;
+  const cl = Math.min(w, h) * 0.2;
+
+  // Subtle tint inside box
+  ctx.save();
+  ctx.fillStyle = 'rgba(59,130,246,0.06)';
+  ctx.fillRect(x, y, w, h);
+  ctx.restore();
+
+  // Dashed border
+  ctx.save();
+  ctx.strokeStyle = 'rgba(96,165,250,0.35)';
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([5, 5]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+  ctx.restore();
+
+  // Glowing corner brackets
+  ctx.save();
+  ctx.strokeStyle = '#60a5fa';
+  ctx.lineWidth = 3;
+  ctx.lineCap = 'round';
+  ctx.shadowColor = 'rgba(96,165,250,0.7)';
+  ctx.shadowBlur = 8;
+  // TL
+  ctx.beginPath(); ctx.moveTo(x, y + cl); ctx.lineTo(x, y); ctx.lineTo(x + cl, y); ctx.stroke();
+  // TR
+  ctx.beginPath(); ctx.moveTo(x + w - cl, y); ctx.lineTo(x + w, y); ctx.lineTo(x + w, y + cl); ctx.stroke();
+  // BL
+  ctx.beginPath(); ctx.moveTo(x, y + h - cl); ctx.lineTo(x, y + h); ctx.lineTo(x + cl, y + h); ctx.stroke();
+  // BR
+  ctx.beginPath(); ctx.moveTo(x + w - cl, y + h); ctx.lineTo(x + w, y + h); ctx.lineTo(x + w, y + h - cl); ctx.stroke();
+  ctx.restore();
+
+  // Emotion label pill
+  const label = `${emoji} ${expr}  ${conf}%`;
+  ctx.save();
+  ctx.font = 'bold 13px Outfit, Arial, sans-serif';
+  const tw = ctx.measureText(label).width;
+  const pw = tw + 20, ph = 26;
+  const lx = Math.max(2, Math.min(x, ctx.canvas.width  - pw - 4));
+  const ly = Math.max(4, y - ph - 6);
+
+  ctx.fillStyle   = 'rgba(29,78,216,0.9)';
+  ctx.shadowColor = 'rgba(37,99,235,0.5)';
+  ctx.shadowBlur  = 12;
+  fillRoundRect(ctx, lx, ly, pw, ph, 8);
+  ctx.shadowBlur  = 0;
+
+  ctx.fillStyle = '#fff';
+  ctx.fillText(label, lx + 10, ly + 18);
+  ctx.restore();
+}
+
+// ── Scan (capture + backend) ─────────────────────────────
+
+function captureFrame() {
+  const video  = document.getElementById('moodVideo');
+  const canvas = document.getElementById('moodCanvas');
+  if (!video || !canvas || !video.videoWidth) return null;
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  // draw un-mirrored (mirror is CSS only)
+  const ctx = canvas.getContext('2d');
+  ctx.save();
+  ctx.translate(canvas.width, 0);
+  ctx.scale(-1, 1);
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  ctx.restore();
+  return canvas.toDataURL('image/jpeg', 0.82);
+}
+
+async function runScan() {
+  if (scanInProgress) return;
+  scanInProgress = true;
+
+  const btn = document.getElementById('scanBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="animation:spin 0.8s linear infinite">
+    <circle cx="12" cy="12" r="10" stroke-opacity="0.25"/><path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"/>
+  </svg> Scanning…`;
+
+  stopDetectionLoop();
+
+  let detected = null;
+
+  // Try backend (most accurate)
+  const image = captureFrame();
+  if (image) {
+    try {
+      const res = await fetch('/api/mood/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.mood) detected = MOOD_MAP[data.mood] || { emoji: '😌', name: data.mood };
+      }
+    } catch {}
+  }
+
+  // Fall back to client-side live detection
+  if (!detected && lastExpression) {
+    const mapped = EXPR_MAP[lastExpression];
+    if (mapped) detected = MOOD_MAP[mapped.mood] || { emoji: mapped.emoji, name: mapped.mood };
+  }
+
+  // Last resort: random
+  if (!detected) {
+    const opts = ['Happy', 'Chill', 'Sad', 'Focus'];
+    const name = opts[Math.floor(Math.random() * opts.length)];
+    detected = MOOD_MAP[name] || { emoji: '😊', name };
+  }
+
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+    <circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg> Scan My Mood`;
+  btn.disabled = false;
+
+  document.getElementById('scanFace').textContent  = detected.emoji || '😊';
+  document.getElementById('scanResultName').textContent = detected.name;
+  document.getElementById('scanResultBar').classList.add('show');
+
+  stopCamera();
+  await pickMood(detected.name);
+  scanInProgress = false;
+}
+
+// ── Suggested songs ──────────────────────────────────────
+
+async function loadSuggested(mood) {
+  const c = document.getElementById('suggestedContainer');
+  c.innerHTML = '<div class="sug-loading"><div class="sug-skel"></div><div class="sug-skel"></div><div class="sug-skel"></div><div class="sug-skel"></div></div>';
+  try {
+    const res = await fetch(`/api/songs/mood?mood=${encodeURIComponent(mood)}`);
+    suggestedSongs = res.ok ? (await res.json()).songs || [] : [];
+  } catch { suggestedSongs = []; }
+  renderSuggested();
+}
+
+function renderSuggested() {
+  const c = document.getElementById('suggestedContainer');
+  if (!suggestedSongs.length) { c.innerHTML = '<div class="sug-empty">No songs found for this mood</div>'; return; }
+  c.innerHTML = `<div class="suggested-songs">${suggestedSongs.map((s, i) => `
+    <div class="sug-song" onclick="playSong(${i})">
+      <div class="sug-thumb">${s.artworkUrl ? `<img src="${s.artworkUrl}" alt="">` : esc(s.emoji || '🎵')}</div>
+      <div class="sug-info">
+        <div class="sug-name">${esc(s.name)}</div>
+        <div class="sug-artist">${esc(s.artist)}</div>
+      </div>
+      <div class="sug-play-icon">
+        <svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="5,3 19,12 5,21"/></svg>
+      </div>
+    </div>
+  `).join('')}</div>`;
+}
+
+function playSong(idx) {
+  sessionStorage.setItem('musix-queued-songs', JSON.stringify(suggestedSongs));
+  sessionStorage.setItem('musix-queued-idx', idx);
+  window.location.href = 'index.html';
+}
+
+// ── Init ─────────────────────────────────────────────────
+
+async function checkAuth() {
+  try {
+    const res = await fetch('/auth/me', { credentials: 'include' });
+    if (!res.ok) return null;
+    return (await res.json()).user || null;
+  } catch { return null; }
+}
+
+(async () => {
+  const user = await checkAuth();
+  if (!user) {
+    document.getElementById('authGate').classList.add('show');
+    return;
+  }
+  updateBanner(currentMood);
+  renderMoodGrid();
+  loadSuggested(currentMood);
+  loadFaceModels(); // background — don't await
+})();
+</script>
+</body>
+</html>

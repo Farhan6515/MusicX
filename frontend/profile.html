@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MusicX Profile</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="profile-page-body">
+  <div class="profile-page-shell">
+    <header class="profile-page-topbar">
+      <a class="mobile-profile-back" href="index.html" aria-label="Back to home">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </a>
+      <div>
+        <div class="mobile-profile-label">MusicX</div>
+        <div class="mobile-profile-title">Profile</div>
+      </div>
+    </header>
+
+    <main class="profile-page-card">
+      <div class="profile-view" id="authView">
+        <div class="modal-label">Profile Access</div>
+        <div class="profile-title" id="authTitle">Login or Sign Up</div>
+        <div class="profile-sub" id="authSub">Use Google to continue to your MusicX dashboard</div>
+
+        <button class="google-auth-btn" type="button" onclick="loginWithGoogle()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+          Login / Sign Up
+        </button>
+        <div class="auth-note">Sign in with email or Google to access your dashboard.</div>
+      </div>
+
+      <div class="profile-view dashboard-view hidden" id="dashboardView">
+        <div class="profile-hero">
+          <div class="profile-avatar-wrap" onclick="openAvatarPicker()" title="Change profile photo">
+            <div class="profile-avatar" id="profileAvatar">S</div>
+            <div class="avatar-cam-overlay">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+            </div>
+          </div>
+          <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarChange(this)">
+          <div>
+            <div class="modal-label">Your Dashboard</div>
+            <div class="profile-title" id="profileName">Listener</div>
+            <div class="profile-sub" id="profileEmail">listener@musicx.app</div>
+          </div>
+        </div>
+
+        <div class="profile-stats">
+          <div class="profile-stat"><span id="statSavedTracks">0</span><small>Saved</small></div>
+          <div class="profile-stat"><span id="currentMoodStat">Happy</span><small>Mood</small></div>
+          <div class="profile-stat profile-stat-btn" onclick="toggleSettings()" id="settingsStat">
+            <span>
+              <svg viewBox="0 0 24 24" fill="currentColor" style="width:17px;height:17px"><path d="M19.14 12.94c.04-.3.06-.61.06-.94s-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+            </span>
+            <small>Settings</small>
+          </div>
+        </div>
+
+        <div class="s-panel" id="settingsPanel">
+          <div class="s-item" onclick="toggleSub('aboutSub', this)">
+            <div class="s-item-left">About Us</div>
+            <svg class="s-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="s-sub" id="aboutSub">
+            <p>MusicX is a mood-aware music player that uses AI emotion detection to serve the perfect playlist.</p>
+          </div>
+          <div class="s-item" onclick="toggleSub('contactSub', this)">
+            <div class="s-item-left">Contact Us</div>
+            <svg class="s-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </div>
+          <div class="s-sub" id="contactSub">
+            <p>Have feedback, bugs, or suggestions?</p>
+            <a href="mailto:farhanbadar66@gmail.com" class="s-contact-link">farhanbadar66@gmail.com</a>
+          </div>
+          <div class="s-item s-item-mode">
+            <div class="s-item-left"><span id="modeLabel">Light Mode</span></div>
+            <div class="mode-toggle" id="modeToggle" onclick="toggleDarkMode()"><div class="mode-thumb"></div></div>
+          </div>
+        </div>
+
+        <div class="dash-activity" id="dashActivity">
+          <div class="da-card"><span id="statPlaysCount">0</span><small>Plays</small></div>
+          <div class="da-card"><span id="statPlaylistsCount">0</span><small>Playlists</small></div>
+        </div>
+
+        <div class="profile-dashboard-card">
+          <div class="profile-card-label">Now Playing</div>
+          <div class="profile-card-title" id="profileNowPlaying">No song</div>
+          <div class="profile-card-meta" id="profileNowArtist">Open home to play music</div>
+        </div>
+
+        <div class="rp-section">
+          <div class="rp-section-hd">
+            <span class="rp-section-title">Recently Played</span>
+            <button class="rp-clear-btn" onclick="clearRecentlyPlayed()">Clear</button>
+          </div>
+          <div class="rp-list" id="rpContainer"></div>
+        </div>
+
+        <button class="auth-submit logout-btn" type="button" onclick="logoutProfile()">Logout</button>
+      </div>
+    </main>
+  </div>
+  <script src="profile.js"></script>
+</body>
+</html>
